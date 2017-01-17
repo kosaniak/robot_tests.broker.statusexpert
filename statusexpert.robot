@@ -61,15 +61,7 @@ ${locator.cancellations[0].documents[0].description}           css=.cancelletion
 
 Підготувати дані для оголошення тендера
     [Arguments]  @{ARGUMENTS}
-    ${period_interval}=  Get Broker Property By Username    ${ARGUMENTS[0]}   period_interval
-    ${INITIAL_TENDER_DATA}=  prepare_test_tender_data   ${period_interval}   ${ARGUMENTS[1]}
-    [return]   ${INITIAL_TENDER_DATA}
-
-Оновити сторінку
-  Reload Page
-
-Відображення основних даних тендера
-   return  ${locator}
+    [return]   ${ARGUMENTS[1]}
 
 Підготувати клієнт для користувача
   [Arguments]  ${username}
@@ -163,14 +155,6 @@ Login
    ${ua_id}=   Get Text  id=auid
    [return]   ${ua_id}
 
-Set Multi Ids
-  [Arguments]  @{ARGUMENTS}
-  [Documentation]
-  ...      ${ARGUMENTS[0]} ==  ${tender_UAid}
-  ${current_location}=      Get Location
-  ${id}=    Get Substring   ${current_location}   10
-  ${Ids}=   Create List     ${tender_UAid}   ${id}
-
 Додати предмет
   [Arguments]   ${item}   ${index}
   ${description_class}=   Get From Dictionary   ${item.classification}   description
@@ -253,7 +237,6 @@ Set Multi Ids
 Зберегти ід лоту майданчка
     ${lotID}=  Отримати інформацію про lotID
     Set Global Variable   ${STATUSEXPERT_LOT_ID}  ${lotID}
-
 
 Пошук тендера по ідентифікатору
     [Arguments]  @{ARGUMENTS}
@@ -357,6 +340,7 @@ Set Multi Ids
   Перевірити та сховати повідомлення
   Wait Until Element Is Visible   css=.bid-proved   10
   Click Element     css=.bid-proved
+
 Видалити документ
    Click Element   xpath=//a[contains(text(), 'Видалити')]
 
@@ -423,9 +407,6 @@ Set Multi Ids
   ${resp}=   Run Keyword And Return Status   Element Should Be Visible   id=close_inform_window
   Run Keyword If   ${resp} == ${True}   Сховати повідомлення
 
-Переглянути повідомлення
-  Сlick Element   css=.hide-alert
-
 Сховати повідомлення
   Click Element   id=close_inform_window
   Sleep    2    Ждем закрытия модального окна
@@ -452,7 +433,7 @@ Set Multi Ids
 
 Зайти в розділ офіс замовника
   Wait Until Element Is Visible   css=.my-cabinet   10
-  Click Element               css=.my-cabinet
+  Click Element   css=.my-cabinet
   Click Element   css=.customer-office
 
 Зайти в розділ кваліфікація
@@ -512,9 +493,6 @@ Set Multi Ids
   Sleep    5
   Перевірити та сховати повідомлення
   Sleep    10
-
-Опублікувати ставку
-  Зайти в розділ купую
 
 Оновити сторінку з тендером
   [Arguments]  @{ARGUMENTS}
@@ -586,55 +564,6 @@ Set Multi Ids
   Wait Until page Contains   Відповідь успішно опублікована    120
   Перевірити та сховати повідомлення
 
-Внести зміни в тендер
-  [Arguments]  @{ARGUMENTS}
-  [Documentation]
-  ...      ${ARGUMENTS[0]} =  username
-  ...      ${ARGUMENTS[1]} =  ${TENDER_UAID}
-  ${period_interval}=  Get Broker Property By Username  ${ARGUMENTS[0]}  period_interval
-  ${ADDITIONAL_DATA}=  prepare_test_tender_data  ${period_interval}  single
-  ${items}=         Get From Dictionary   ${tender_data.data}               items
-  ${description}=   Get From Dictionary   ${tender_data.data}               description
-  statusexpert.Пошук тендера по ідентифікатору   ${ARGUMENTS[0]}   ${ARGUMENTS[1]}
-
-додати предмети закупівлі
-  [Arguments]  @{ARGUMENTS}
-  [Documentation]
-  ...      ${ARGUMENTS[0]} =  username
-  ...      ${ARGUMENTS[1]} =  ${TENDER_UAID}
-  ...      ${ARGUMENTS[2]} =  3
-  ${period_interval}=  Get Broker Property By Username  ${ARGUMENTS[0]}  period_interval
-
-  ${ADDITIONAL_DATA}=  prepare_test_tender_data  ${period_interval}  multi
-  ${items}=         Get From Dictionary   ${tender_data.data}               items
-  Selenium2Library.Switch Browser    ${ARGUMENTS[0]}
-  Run keyword if   '${TEST NAME}' == 'Можливість додати позицію закупівлі в тендер'   Додати позицію
-  Run keyword if   '${TEST NAME}' != 'Можливість додати позицію закупівлі в тендер'   Видалити позиції
-
-Додати позицію
-  statusexpert.Пошук тендера по ідентифікатору   ${ARGUMENTS[0]}   ${ARGUMENTS[1]}
-  Sleep  2
-  Click Element                     xpath=//a[@class='btn btn-primary ng-scope']
-  Sleep  2
-  : FOR    ${INDEX}    IN RANGE    1    ${ARGUMENTS[2]} +1
-  \   Click Element   xpath=.//*[@id='myform']/tender-form/div/button
-  \   Додати предмет   ${items[${INDEX}]}   ${INDEX}
-  Sleep  2
-  Click Element   xpath=//div[@class='form-actions']/button[./text()='Зберегти зміни']
-  Wait Until Page Contains    [ТЕСТУВАННЯ]   10
-
-Видалити позиції
-  statusexpert.Пошук тендера по ідентифікатору   ${ARGUMENTS[0]}   ${ARGUMENTS[1]}
-  Click Element                     xpath=//a[@class='btn btn-primary ng-scope']
-  Sleep  2
-  : FOR    ${INDEX}    IN RANGE    1    ${ARGUMENTS[2]} +1
-  \   Click Element   xpath=(//button[@class='btn btn-danger ng-scope'])[last()]
-  \   Sleep  1
-  Sleep  2
-  Wait Until Page Contains Element   xpath=//div[@class='form-actions']/button[./text()='Зберегти зміни']   10
-  Click Element   xpath=//div[@class='form-actions']/button[./text()='Зберегти зміни']
-  Wait Until Page Contains    [ТЕСТУВАННЯ]   10
-
 Відправити документи до цбд
   ${location}=    Get Location
   Go To  ${BROKERS['statusexpert'].syncdocs}
@@ -699,28 +628,18 @@ Set Multi Ids
 
 Отримати інформацію про minimalStep.amount
   ${return_value}=   Отримати текст із поля і показати на сторінці   minimalStep.amount
-  ${return_value}=   Evaluate   "".join("${return_value}".replace(",",".").split(' '))
-  ${return_value}=   Convert To Number   ${return_value}
+  ${return_value}=   price_format   ${return_value}
   [return]  ${return_value}
 
 Отримати інформацію про розмір ставки
   ${return_value}=   Отримати текст із поля і показати на сторінці   mybid
-  ${return_value}=   Evaluate   "".join("${return_value}".replace(",",".").split(' '))
-  ${return_value}=   Convert To Number   ${return_value}
+  ${return_value}=   price_format   ${return_value}
   [return]  ${return_value}
 
 Отримати інформацію про value.amount
   ${return_value}=   Отримати текст із поля і показати на сторінці  value.amount
-  ${return_value}=   Evaluate   "".join("${return_value}".replace(",",".").split(' '))
-  ${return_value}=   Convert To Number   ${return_value}
+  ${return_value}=   price_format   ${return_value}
   [return]  ${return_value}
-
-Відмітити на сторінці поле з тендера
-  [Arguments]   ${fieldname}  ${locator}
-  ${last_note_id}=  Add pointy note   ${locator}   Found ${fieldname}   width=200  position=bottom
-  Align elements horizontally    ${locator}   ${last_note_id}
-  sleep  1
-  Remove element   ${last_note_id}
 
 Отримати інформацію про auctionID
   ${return_value}=   Отримати текст із поля і показати на сторінці   auctionID
@@ -948,8 +867,9 @@ Set Multi Ids
   Виконати дію   ${action_id}
   Wait Until Element Is Visible   id=OpLotForm_op_assets_link   10
   Input Text   id=OpLotForm_op_assets_link  ${certificate_url}
+  Sleep    2
   Click Element  xpath=//input[@type="submit"]
-  Wait Until Page Contains   Посилання успішно прикріплене   30
+  Run Keyword And Ignore Error   Wait Until Page Contains   Посилання успішно прикріплене   30
   Перевірити та сховати повідомлення
 
 Додати офлайн документ
@@ -961,8 +881,9 @@ Set Multi Ids
   Виконати дію   ${action_id}
   Wait Until Element Is Visible   id=OpLotForm_op_accessDetails   10
   Input Text   id=OpLotForm_op_accessDetails  ${accessDetails}
+  Sleep    2
   Click Element  xpath=//input[@type="submit"]
-  Wait Until Page Contains   Документ успішно відправлений   30
+  Run Keyword And Ignore Error   Run Keyword And Ignore Error   Wait Until Page Contains   Документ успішно відправлений   30
   Перевірити та сховати повідомлення
 
 Додати Virtual Data Room
@@ -981,14 +902,14 @@ Set Multi Ids
     Input Text   id=OpLotForm_op_vdr_link  ${ARGUMENTS[2]}
     Sleep    2
     Click Element  xpath=//input[@type="submit"]
-    Wait Until Page Contains   Посилання успішно прикріплене   30
+    Run Keyword And Ignore Error   Wait Until Page Contains   Посилання успішно прикріплене   30
     Перевірити та сховати повідомлення
 
 Дочекатися відображення запитання на сторінці
-  [Arguments]  ${text}
-  Reload Page
-  Показати вкладку запитання
-  Wait Until Page Contains   ${text}
+    [Arguments]  ${text}
+    Reload Page
+    Показати вкладку запитання
+    Wait Until Page Contains   ${text}
 
 Отримати інформацію із запитання
     [Arguments]   @{ARGUMENTS}
@@ -1019,7 +940,7 @@ Set Multi Ids
 
 Отримати інформацію про questions[0].answer
   Показати вкладку запитання
-  Run Keyword And Return  Отримати текст із поля і показати на сторінці  questions[1].answer
+  Run Keyword And Return  Отримати текст із поля і показати на сторінці  questions[0].answer
 
 Отримати інформацію про questions[1].title
   Показати вкладку запитання

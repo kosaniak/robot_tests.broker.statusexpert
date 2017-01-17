@@ -37,7 +37,7 @@ def adapt_items_data(field_name, value):
     elif field_name == "unit.code":
         value = convert_statusexpert_string_to_common_string(value)
     return value
-    
+
 def convert_statusexpert_string_to_common_string(string):
     return {
             u"пар": u"PR" ,
@@ -118,3 +118,7 @@ def procuring_entity_name(tender_data):
 
 def join(l, separator):
     return separator.join(l)
+
+def price_format(val):
+    val = val.replace(' ','').replace(',','.')
+    return float(val)
