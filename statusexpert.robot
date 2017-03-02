@@ -1,5 +1,4 @@
 *** Settings ***
-#Library  Selenium2Screenshots
 Library  String
 Library  DateTime
 Library  statusexpert_service.py
@@ -56,6 +55,8 @@ ${locator.cancellations[0].status}                             css=.cancellation
 ${locator.cancellations[0].reason}                             css=.cancellation_reason_0
 ${locator.cancellations[0].documents[0].title}                 css=.cancelletion_doc_title_0
 ${locator.cancellations[0].documents[0].description}           css=.cancelletion_doc_description_0
+${locator.awards[0].status}                                    css=.award_status_0
+${locator.awards[1].status}                                    css=.award_status_1
 
 *** Keywords ***
 
@@ -297,8 +298,11 @@ Login
     Перевірити та сховати повідомлення
 
 Додати фінкомпанію
-    Input text    id=PersonForm_op_ua_fin                123456
-    Input text    id=PersonForm_op_ua_fin_legalname       test
+  [Arguments]   ${id}
+  Click Element  id=fin_label
+  Wait Until Element Is Visible   id=PersonForm_op_ua_fin
+  Input text    id=PersonForm_op_ua_fin   ${id}
+  Input text    id=PersonForm_op_ua_fin_legalname       test
 
 Змінити документ в ставці
    [Arguments]   ${username}   ${tender_uaid}    ${path}   ${docid}
@@ -320,14 +324,16 @@ Login
   Wait Until Page Contains   Стати учасником:    15
   Wait Until Page Contains Element   id=initial_costs   15
   Input text    id=initial_costs   ${bid}
-  Run keyword if   '${procedure}' == 'Право вимоги'   Додати фінкомпанію
+  Run keyword if   '${procedure}' == 'Право вимоги'   Додати фінкомпанію   ${ARGUMENTS[2].data.tenderers[0].additionalIdentifiers[0].id}
   Wait Until Element Is Visible   id=but_to_step_2   5
   Click Element   id=but_to_step_2
   Wait Until Element Is Visible   id=but_to_step_3   5
   Click Element   id=but_to_step_3
   Wait Until Element Is Visible   id=but_to_step_4   5
   Click Element   id=but_to_step_4
-  Wait Until Element Is Visible   id=but_save   5
+  Wait Until Element Is Visible   id=reglament_label
+  Click Element   id=reglament_label
+  Wait Until Element Is Enabled   id=but_save   5
   Click Element   id=but_save
   Wait Until Page Contains   Заявки на участь у торгах   10
   Перевірити та сховати повідомлення
@@ -433,7 +439,7 @@ Login
 
 Зайти в розділ офіс замовника
   Wait Until Element Is Visible   css=.my-cabinet   10
-  Click Element   css=.my-cabinet
+  Click Element               css=.my-cabinet
   Click Element   css=.customer-office
 
 Зайти в розділ кваліфікація
@@ -748,6 +754,9 @@ Login
 Показати вкладку запитання
   Click Link    xpath=//*[contains(@id, 'button_tab3')]
 
+Показати вкладку кваліфікація
+  Click Link    xpath=//*[contains(@id, 'button_tab5')]
+
 Отримати інформацію із предмету
   [Arguments]  ${username}  ${tender_uaid}  ${item_id}  ${field_name}
   ${field_name_class}=  Catenate    SEPARATOR=   item_   ${field_name}
@@ -805,42 +814,20 @@ Login
   Wait Until Element Is Visible   xpath=//button[contains(., "Підтвердити")]    10
   Click Element   xpath=//button[contains(., "Підтвердити")]
 
-Підтвердити протокол
-  [Arguments]   ${lot_id}
-  ${drop_id}=   Catenate   SEPARATOR=   ${lot_id}  _pending
-  ${id}=     Catenate   SEPARATOR=    ${lot_id}  _confirm_protocol
-  Клацнути по випадаючому списку     ${drop_id}
-  Wait Until Page Contains   Переглянути та підтвердити протокол  5
-  Виконати дію    ${id}
-  Wait Until Page Contains    Учасник по лоту   10
-  Click Element   css=.accepted
-  Підтвердження дії в модальном вікні
-
-Підтвердити оплату
-  [Arguments]   ${lot_id}
-  ${drop_id}=   Catenate   SEPARATOR=   ${lot_id}  _pending
-  ${id}=     Catenate   SEPARATOR=    ${lot_id}  _confirm_payment
-  Клацнути по випадаючому списку     ${drop_id}
-  Wait Until Page Contains    Підтвердити оплату   5
-  Виконати дію    ${id}
-  Wait Until Page Contains    Ви дійсно підтверджуєте оплату та кваліфікуете учасника?    10
-  Підтвердження дії в модальном вікні
-  Sleep   10  Ждем ответа от сервера
-  Перевірити та сховати повідомлення
-
 Підтвердити постачальника
-  [Arguments]   @{ARGUMENTS}
-  [Documentation]
-  ...   ${ARGUMENTS[0]} == username
-  ...   ${ARGUMENTS[1]} == tender_uaid
-  statusexpert.Пошук тендера по ідентифікатору   ${ARGUMENTS[0]}   ${ARGUMENTS[1]}
-  ${lot_id}=    Отримати інформацію про lotID
-  Зайти в розділ кваліфікація
-  Wait Until Keyword Succeeds   10 x   30 s   Run Keywords
-  ...   Reload Page
-  ...   AND    Підтвердити протокол  ${lot_id}
-  Wait Until Page Contains   Кваліфікація учасників    10
-  Підтвердити оплату     ${lot_id}
+   [Arguments]   @{ARGUMENTS}
+   [Documentation]
+   ...   ${ARGUMENTS[0]} == username
+   ...   ${ARGUMENTS[1]} == tender_uaid
+   Зайти в розділ кваліфікація
+   ${drop_id}=  Catenate   SEPARATOR=   ${STATUSEXPERT_LOT_ID}   _pending.payment
+   ${action_id}=   Catenate   SEPARATOR=   ${STATUSEXPERT_LOT_ID}   _confirm_payment
+   Клацнути по випадаючому списку     ${drop_id}
+   Виконати дію   ${action_id}
+   Wait Until Page Contains   Ви дійно підтверджуєте оплату?   10
+   Підтвердження дії в модальном вікні
+   Wait Until Page Contains   Оплата підтверджена. Завантажте та активуйте контракт   10
+   Перевірити та сховати повідомлення
 
 Завантажити ілюстрацію
   [Arguments]   @{ARGUMENTS}
@@ -867,9 +854,8 @@ Login
   Виконати дію   ${action_id}
   Wait Until Element Is Visible   id=OpLotForm_op_assets_link   10
   Input Text   id=OpLotForm_op_assets_link  ${certificate_url}
-  Sleep    2
   Click Element  xpath=//input[@type="submit"]
-  Run Keyword And Ignore Error   Wait Until Page Contains   Посилання успішно прикріплене   30
+  Wait Until Page Contains   Посилання успішно прикріплене   30
   Перевірити та сховати повідомлення
 
 Додати офлайн документ
@@ -881,9 +867,8 @@ Login
   Виконати дію   ${action_id}
   Wait Until Element Is Visible   id=OpLotForm_op_accessDetails   10
   Input Text   id=OpLotForm_op_accessDetails  ${accessDetails}
-  Sleep    2
   Click Element  xpath=//input[@type="submit"]
-  Run Keyword And Ignore Error   Run Keyword And Ignore Error   Wait Until Page Contains   Документ успішно відправлений   30
+  Wait Until Page Contains   Документ успішно відправлений   30
   Перевірити та сховати повідомлення
 
 Додати Virtual Data Room
@@ -902,14 +887,14 @@ Login
     Input Text   id=OpLotForm_op_vdr_link  ${ARGUMENTS[2]}
     Sleep    2
     Click Element  xpath=//input[@type="submit"]
-    Run Keyword And Ignore Error   Wait Until Page Contains   Посилання успішно прикріплене   30
+    Wait Until Page Contains   Посилання успішно прикріплене   30
     Перевірити та сховати повідомлення
 
 Дочекатися відображення запитання на сторінці
-    [Arguments]  ${text}
-    Reload Page
-    Показати вкладку запитання
-    Wait Until Page Contains   ${text}
+  [Arguments]  ${text}
+  Reload Page
+  Показати вкладку запитання
+  Wait Until Page Contains   ${text}
 
 Отримати інформацію із запитання
     [Arguments]   @{ARGUMENTS}
@@ -1006,6 +991,18 @@ Login
   Sleep   5   Ждем ответ от сервера
   Перевірити та сховати повідомлення
 
+Отримати інформацію про awards[0].status
+  Показати вкладку кваліфікація
+  ${return_value}=   Отримати текст із поля і показати на сторінці   awards[0].status
+  ${return_value}=   convert_statusexpert_string_to_common_string  ${return_value}
+  [return]  ${return_value}
+
+Отримати інформацію про awards[1].status
+  Показати вкладку кваліфікація
+  ${return_value}=   Отримати текст із поля і показати на сторінці   awards[1].status
+  ${return_value}=   convert_statusexpert_string_to_common_string  ${return_value}
+  [return]  ${return_value}
+
 Отримати інформацію про cancellations[0].status
   ${return_value}=   Отримати текст із поля і показати на сторінці   cancellations[0].status
   ${return_value}=   convert_statusexpert_string_to_common_string  ${return_value}
@@ -1029,22 +1026,17 @@ Login
   [return]  ${title}
 
 Скасування рішення кваліфікаційної комісії
-  [Arguments]  @{ARGUMENTS}
-  [Documentation]
-  ...   ${ARGUMENTS[0]} == username
-  ...   ${ARGUMENTS[1]} == tender_uaid
-  Зайти в розділ кваліфікація
-  ${drop_id}=  Catenate   SEPARATOR=   ${STATUSEXPERT_LOT_ID}   _active
-  ${action_id}=   Catenate   SEPARATOR=   ${STATUSEXPERT_LOT_ID}   _cancel_award
-  Wait Until Keyword Succeeds   10 x   20 s   Run Keywords
-  ...   Reload Page
-  ...   AND   Клацнути по випадаючому списку  ${drop_id}
-  ...   AND   Element Should Be Visible   id=${action_id}
-  Виконати дію   ${action_id}
-  Sleep    5   Ждем отображение модального окна
-  Click Element   xpath=//input[@type="submit"]
-  Wait Until Page Contains    Рішення успішно скасоване   45
-  Перевірити та сховати повідомлення
+   [Arguments]  @{ARGUMENTS}
+   [Documentation]
+   ...   ${ARGUMENTS[0]} == username
+   ...   ${ARGUMENTS[1]} == tender_uaid
+   Зайти в розділ купую
+   Wait Until Element Is Visible   css=.return-guarantee   15
+   Click Element   css=.return-guarantee
+   Wait Until Page Contains   Ви дійсно відмовляєтесь очікувати дискваліфікації першого кандидата та забираєте гарантійний внесок?   10
+   Підтвердження дії в модальном вікні
+   Wait Until Page Contains   Заявка знята з черги на кваліфікацію. Очікуйте повернення гарантійного внеску   15
+   Перевірити та сховати повідомлення
 
 Отримати кількість документів в тендері
   [Arguments]  ${username}  ${tender_uaid}
@@ -1093,11 +1085,22 @@ Login
 
 Дискваліфікувати постачальника
   [ARGUMENTS]   ${user_name}   ${tender_uaid}  ${award_index}  ${description}
-  Wait Until Page Contains    Дискваліфікація учасника    10
-  Input Text  id=OpAward_op_title   Дискваліфікація
-  Input Text  id=OpAward_op_description   ${description}
+  Зайти в розділ кваліфікація
+  ${verification}=  Catenate   SEPARATOR=   ${STATUSEXPERT_LOT_ID}   _pending.verification
+  ${payment}=  Catenate   SEPARATOR=   ${STATUSEXPERT_LOT_ID}   _pending.payment
+  ${active}=  Catenate   SEPARATOR=   ${STATUSEXPERT_LOT_ID}   _active
+  Wait Until Keyword Succeeds   10 x   20 s   Run Keywords
+  ...   Reload Page
+  ...   AND   Element Should Be Visible   xpath=//*[contains(@id, '${verification}') or contains(@id,'${payment}') or contains(@id,'${active}')]
+  ...   AND   Click Element   xpath=//*[contains(@id, '${verification}') or contains(@id,'${payment}') or contains(@id,'${active}')]
+  ${action_id}=   Catenate   SEPARATOR=   ${STATUSEXPERT_LOT_ID}   _disqualification
+  Wait Until Page Contains   Дискваліфікувати
+  Виконати дію   ${action_id}
+  Wait Until Element Is Visible   id=DisqualificationForm_op_title   10
+  Input Text  id=DisqualificationForm_op_title   Дискваліфікація
+  Input Text  id=DisqualificationForm_op_description   ${description}
   Click Element   xpath=//input[@type="submit"]
-  Wait Until Page Contains    Кандидат дискваліфікований. Зачекайте синхронізації   50
+  Wait Until Page Contains    Кандидат дискваліфікований. Зачекайте синхронізації   30
   Перевірити та сховати повідомлення
 
 Завантажити угоду до тендера
@@ -1129,4 +1132,32 @@ Login
   Input Text    id=datetimepicker5    ${date}
   Click Element   xpath=//input[@class="btn btn-primary bnt-lg pull-right"]
   Wait Until Page Contains   Договір знаходиться в стані очікування публікації в ЦБД   45
+  Перевірити та сховати повідомлення
+
+Підтвердити наявність протоколу аукціону
+   [Arguments]   ${user_name}   ${tender_uaid}   ${award_index}
+   Зайти в розділ кваліфікація
+   ${drop_id}=  Catenate   SEPARATOR=   ${STATUSEXPERT_LOT_ID}   _pending.verification
+   ${action_id}=   Catenate   SEPARATOR=   ${STATUSEXPERT_LOT_ID}   _confirm_protocol
+   Клацнути по випадаючому списку     ${drop_id}
+   Виконати дію   ${action_id}
+   Wait Until Page Contains   Ви дійсно підтверджуєте протокол?   10
+   Підтвердження дії в модальном вікні
+   Перевірити та сховати повідомлення
+
+Завантажити протокол аукціону в авард
+  [Arguments]   ${user_name}   ${tender_uaid}   ${auction_protocol_path}   ${award_index}
+  Зайти в розділ кваліфікація
+  ${drop_id}=  Catenate   SEPARATOR=   ${STATUSEXPERT_LOT_ID}   _pending.verification
+  ${action_id}=   Catenate   SEPARATOR=   ${STATUSEXPERT_LOT_ID}   _uploadprotocol
+  Wait Until Keyword Succeeds   5 x   10 s   Run Keywords
+  ...   Reload Page
+  ...   AND   Клацнути по випадаючому списку  ${drop_id}
+  ...   AND   Element Should Be Visible   id=${action_id}
+  Виконати дію   ${action_id}
+  Wait Until Element Is Visible   id=fileInput1
+  Приєднати документ   id=fileInput1   ${auction_protocol_path}
+  Sleep    2
+  Click Element   xpath=//input[@type="submit"]
+  Wait Until Page Contains   Протокол успішно завантажений. Для переходу до іншого етапу - підтвердіть протокол   10
   Перевірити та сховати повідомлення
