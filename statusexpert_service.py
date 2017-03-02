@@ -103,7 +103,13 @@ def convert_statusexpert_string_to_common_string(string):
             u"Паспорт торгів" : u"tenderNotice",
             u"Юридична Інформація Майданчиків" : u"x_dgfPlatformLegalDetails",
             u'Порядку ознайомлення з активом у кімнаті даних' : u'x_dgfAssetFamiliarization',
-            u"Порядку ознайомлення з майном" : u'x_dgfAssetFamiliarization'
+            u"Порядку ознайомлення з майном" : u'x_dgfAssetFamiliarization',
+            u"Очікується кінець кваліфікації" : u"pending.waiting",
+            u"Очікується протокол" : u"pending.verification",
+            u"Очікується оплата" : u"pending.payment",
+            u"Кандидат забрав гарантійний внесок" : u"cancelled",
+            u"Аукціон неуспішний" : u"unsuccessful",
+            u"Оплачено, очікується підписання договору" : u"active"
     }.get(string, string)
 
 def subtract_from_time(date_time, subtr_min, subtr_sec):
@@ -115,9 +121,6 @@ def subtract_from_time(date_time, subtr_min, subtr_sec):
 def procuring_entity_name(tender_data):
      tender_data.data.procuringEntity['name'] = u"ПАТ \"Прайм-Банк\""
      return tender_data
-
-def join(l, separator):
-    return separator.join(l)
 
 def price_format(val):
     val = val.replace(' ','').replace(',','.')
